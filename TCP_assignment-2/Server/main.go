@@ -70,27 +70,74 @@ func Store(conn net.Conn) {
 		username := parts[0]
 		message := parts[1]
 
-		//fmt.Println(parts[0])
+		fmt.Println(message)
+		switch msg := strings.Trim(message, "\r\n"); msg {
+		case "#getFirstMsg":
+			fmt.Println("first")
+			first(conn, username)
+		case "#getLastMsg":
+			fmt.Println("last")
+			last(conn, username)
+		case "#dequeue":
+			fmt.Println("dequeue")
+			Dequeue(conn, username)
+		default:
 
-		if _, ok := x[username]; ok {
-			//fmt.Println("User exits in Connection")
-			x[username].PushBack(message)
-			fmt.Println("Messages Fom ", username, ":-")
-			for e := x[username].Front(); e != nil; e = e.Next() {
-				fmt.Print(e.Value)
+			if _, ok := x[username]; ok {
+
+				x[username].PushBack(message)
+				fmt.Println("Messages Fom ", username, ":-")
+				for e := x[username].Front(); e != nil; e = e.Next() {
+					fmt.Print(e.Value)
+				}
+				fmt.Println("---------------------")
+
+			} else {
+				x[username] = list.New()
+				x[username].PushBack(message)
+				fmt.Println("Messages Fom ", username, ":-")
+				for e := x[username].Front(); e != nil; e = e.Next() {
+					fmt.Print(e.Value)
+				}
+				fmt.Println("---------------------")
+
 			}
-			fmt.Println("---------------------")
-		} else {
-			x[username] = list.New()
-			x[username].PushBack(message)
-			fmt.Println("Messages Fom ", username, ":-")
-			for e := x[username].Front(); e != nil; e = e.Next() {
-				fmt.Print(e.Value)
-			}
-			fmt.Println("---------------------")
+
 		}
+
 	}
 
 	deadConnection <- conn
 
+}
+
+func first(connection net.Conn, username string) {
+	first := x[username].Front().Value
+	first_msg := fmt.Sprintf("Fisrt Messaage:- %v", first)
+	// first_msg := []byte(fmt.Sprintf("%v", first.(interface{})))
+	connection.Write([]byte(first_msg))
+	fmt.Println("fisrt Functin Called", first)
+}
+
+func last(connection net.Conn, username string) {
+	first := x[username].Back().Value
+	first_msg := fmt.Sprintf("Last Messaage:- %v", first)
+	// first_msg := []byte(fmt.Sprintf("%v", first.(interface{})))
+	connection.Write([]byte(first_msg))
+	fmt.Println("Last Functin Called", first)
+}
+
+func Dequeue(connection net.Conn, username string) {
+	if x[username].Len() > 0 {
+		ele := x[username].Front()
+		x[username].Remove(ele)
+		msg := "Removed First Message , Because this is FIFO Queue ."
+		msg1 := fmt.Sprintf("%v ....\n", msg)
+		connection.Write([]byte(msg1))
+
+	} else {
+		fmt.Errorf("Pop Error: Queue is empty")
+		msg := "Pop Error: Queue is empty"
+		connection.Write([]byte(msg))
+	}
 }
